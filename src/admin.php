@@ -343,10 +343,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create']))
         exit;
     }
 }
-
-
 #endregion
 
+#region Delete Inventory Item
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_item'])) {
+    $product_name = clean('product_name');
+    if ($product_name === '') {
+        $_SESSION['inventory_error'] = "Product name is required to delete an item.";
+    } else {
+        try {
+            $deleted = $InvDB->deleteByProductName($product_name);
+            $_SESSION['inventory_success'] =
+                "Item '{$product_name}' deleted successfully.";
+        } catch (Exception $e) {
+            $_SESSION['inventory_error'] = $e->getMessage();
+        }
+    }
+    header("Location: " . BASE_URL . "/index.php?page=admin");
+    exit;
+}
+#endregion
 
 #region Create Inventory Item
 $product_name = $description = $type = $category = $price = $stock = $photo = "";
@@ -1077,7 +1093,8 @@ require_once BASE_PATH.'/src/includes/adminheader.php';
         <div class="admin-actions">
           <button type="submit" name="add" class="btn btn-secondary">Add Item</button>
           <button class="btn btn-secondary">Edit Item</button>
-          <button class="btn btn-danger">Delete Item</button>
+                    <button type="submit" name="delete_item" value="1" class="btn btn-danger"onclick="return confirm('This will permanently delete the item. Continue?');">Delete Item</button>
+      <!--<button class="btn btn-danger">Delete Item</button>-->
         </div>
       </form><br><br>
    <!-- </aside>-->
