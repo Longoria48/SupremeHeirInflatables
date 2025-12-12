@@ -445,7 +445,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add'])) {
 
     if (empty($errors)) {
             try {
-                $InventoryItems->createProduct($product_name, $description, $type, $category, $price, $stock, $photo);
+                $InvDB->createProduct($product_name, $description, $type, $category, $price, $stock, $photo);
                 $_SESSION['inventory_success'] = "Product created successfully";
             } catch (PDOException $e) {
                 if ($e->getCode() == '23000') {
@@ -849,7 +849,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete']))
             error_log("General error in deleteItem: ".$e->getMessage());
             $_SESSION['customer_error'] = "Could not delete reservation: " . esc($e->getMessage());
         }
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: " . BASE_URL . "/index.php?page=admin");
         exit;
     }
 }
@@ -1054,7 +1054,9 @@ require_once BASE_PATH.'/src/includes/adminheader.php';
   <main>
     <!-- Add Reservation Form -->
       <h2 class ="adminHeader">Add Reservation</h2>
-      <form action="../src/admin.php" method="post" id="createReservation" class="admin-form">
+      <!--<form action="../src/admin.php" method="post" id="createReservation" class="admin-form"> -->
+        <form action="index.php?page=admin" method="post" id="createReservation" class="admin-form">
+
         <div class="grid">
           <label>First Name<input id="firstName" type="text" name="firstName" value="<?php echo esc($firstName); ?>"></label>
           <label>Last Name<input id="lastName" type="text" name="lastName" value="<?php echo esc($lastName); ?>"></label>
@@ -1083,7 +1085,9 @@ require_once BASE_PATH.'/src/includes/adminheader.php';
 
       <!-- Inventory Form -->
       <h2 class ="adminHeader" style="margin-top:1rem">Inventory</h2>
-      <form action="../src/admin.php" method="post" class="admin-form">
+      <!-- <form action="../src/admin.php" method="post" class="admin-form">  -->
+      <form action="<?php echo BASE_URL; ?>/index.php?page=admin" method="post" class="admin-form">
+
         <div class="grid">
           <label>Product Name<input type="text" name="product_name" value="<?php echo esc($product_name); ?>"></label>
           <label>Description<input type="text" name="description" value="<?php echo esc($description); ?>"></label>
@@ -1104,7 +1108,7 @@ require_once BASE_PATH.'/src/includes/adminheader.php';
         </div>
         <div class="admin-actions">
           <button type="submit" name="add" class="btn btn-secondary">Add Item</button>
-          <button class="btn btn-secondary">Edit Item</button>
+          <!-- <button class="btn btn-secondary">Edit Item</button>  -->
                     <button type="submit" name="delete_item" value="1" class="btn btn-danger"onclick="return confirm('This will permanently delete the item. Continue?');">Delete Item</button>
       <!--<button class="btn btn-danger">Delete Item</button>-->
         </div>
@@ -1114,7 +1118,8 @@ require_once BASE_PATH.'/src/includes/adminheader.php';
 <!-- Search Form -->
 <section class="admin-panel" id="adminSearchBorder">
   <h2>Search Reservations</h2>
-  <form action="<?php echo $BASE_URL?>admin.php" method="post" class="admin-form" id="adminSearchForm">
+ <!-- <form action="<(?)php echo $BASE_URL?>admin.php" method="post" class="admin-form" id="adminSearchForm">  -->
+  <form action="<?php echo BASE_URL; ?>/index.php?page=admin" method="post" class="admin-form" id="adminSearchForm">
     <div>
       <label for="search_field">Field</label>
       <select name="field" id="search_field">
@@ -1146,7 +1151,7 @@ require_once BASE_PATH.'/src/includes/adminheader.php';
   </form>
 
 <!-- Results Table -->
-<form method="post">
+<form method="post" action="<?php echo BASE_URL; ?>/index.php?page=admin">
   <table class="results-table">
     <thead>
       <tr>

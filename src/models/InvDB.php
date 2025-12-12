@@ -136,5 +136,19 @@ class InvDB
             throw $e;
         }
     }
+
+    public function createProduct($product_name, $prod_description, $prod_type, $category, $price, $stock, $photo)
+    {
+        $stmt = $this->conn->prepare("INSERT INTO inventory (product_name, description, type, category, price, stock, photo) 
+                                    VALUES (:product_name, :prod_description, :prod_type, :category, :price, :stock, :photo)");
+        $stmt->bindParam(':product_name', $product_name);
+        $stmt->bindParam(':prod_description', $prod_description);
+        $stmt->bindParam(':prod_type', $prod_type);
+        $stmt->bindParam(':category', $category);
+        $stmt->bindParam(':price', $price);
+        $stmt->bindParam(':stock', $stock);
+        $stmt->bindParam(':photo', $photo);
+        $stmt->execute();
+    }
 }
 ?>

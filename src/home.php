@@ -34,7 +34,8 @@ require_once BASE_PATH.'/src/includes/header.php';
       <h1>Welcome to Supreme Heir Inflatables</h1>
       <p>We provide premium, safety-inspected inflatables fit for royalty — birthdays, school events, block parties, and more.</p>
       <p class="notice">📍 Service area: <strong>State Panhandle</strong> only.</p>
-      <a class="btn btn-primary" href="<?php echo BASE_URL; ?>/../index.php?page=rentals">Browse Rentals</a>
+      <!--<a class="btn btn-primary" href="<(?)php echo BASE_URL; ?>/../index.php?page=rentals">Browse Rentals</a> -->
+      <a class="btn btn-primary" href="<?php echo BASE_URL; ?>/index.php?page=rentals">Browse Rentals</a>
     </section>
 
     <section class="testimonials container">

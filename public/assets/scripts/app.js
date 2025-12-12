@@ -433,7 +433,8 @@
 // Browse Rentals Cart Adjustment
 // Note: Remove browseHref 
 
-        const browseHref = `${BASE_URL || ''}/../index.php?page=rentals`;
+        //const browseHref = `${BASE_URL || ''}/../index.php?page=rentals`;
+        const browseHref = `${BASE_URL || ''}/index.php?page=rentals`;
         // create the empty-card via DOM so we can apply inline styles (prevents external CSS hover rules collapsing it)
         const emptyCard = document.createElement('div');
         emptyCard.className = 'card';
@@ -575,7 +576,9 @@
     list.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-browse]');
       if (!btn) return;
-      const browseHref = `${window.BASE_URL || ''}/../index.php?page=rentals`;
+      //const browseHref = `${window.BASE_URL || ''}/../index.php?page=rentals`;
+      const browseHref = `${window.BASE_URL || ''}/index.php?page=rentals`
+
       // navigate via JS to avoid any native anchor focus/scroll quirks
       window.location.href = browseHref;
     });
@@ -711,8 +714,10 @@
         const totalEl = byId('grandTotal');
           const cartItems = list.querySelector('#cartItems');
           const cartDatesSection = byId('cartDates');
-          if (cartItems){ cartItems.innerHTML = `<div class="card"><p>Your cart is empty.</p><p><a class="btn btn-primary" href="${BASE_URL || ''}/../index.php?page=rentals#">Browse Rentals</a></p></div>`; }
-          if (cartDatesSection) cartDatesSection.style.display = 'none';
+         // if (cartItems){ cartItems.innerHTML = `<div class="card"><p>Your cart is empty.</p><p><a class="btn btn-primary" href="${BASE_URL || ''}/../index.php?page=rentals#">Browse Rentals</a></p></div>`; }
+         if (cartItems){cartItems.innerHTML = `<div class="card"><p>Your cart is empty.</p><p><a class="btn btn-primary" href="${BASE_URL || ''}/index.php?page=rentals#">Browse Rentals</a></p></div>`;}
+
+         if (cartDatesSection) cartDatesSection.style.display = 'none';
         if (totalEl){ totalEl.textContent = '$0'; }
       }
 
@@ -829,4 +834,4 @@
       }
     });
   }
-})();
+//})();

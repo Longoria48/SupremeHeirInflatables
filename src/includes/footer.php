@@ -2,9 +2,9 @@
 <p>© <span data-year></span> Supreme Heir Inflatables • Serving the State Panhandle</p>
 <!-- Footer links match new link structure -->
 <nav aria-label="Footer">
-    <a href="<?php echo BASE_URL; ?>/../index.php?page=rentals">Rentals</a> ·
-    <a href="<?php echo BASE_URL; ?>/../index.php?page=cart">Cart</a> ·
-    <a href="<?php echo BASE_URL; ?>/../index.php?page=contact">Contact</a>
+    <a href="<?php echo BASE_URL; ?>/index.php?page=rentals">Rentals</a> ·
+    <a href="<?php echo BASE_URL; ?>/index.php?page=cart">Cart</a> ·
+    <a href="<?php echo BASE_URL; ?>/index.php?page=contact">Contact</a>
 </nav>
 </footer>
 <div class="backdrop" data-backdrop hidden></div>

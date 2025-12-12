@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		session_regenerate_id(true); //secures against session hijaking
         $_SESSION['is_admin'] = true;
         $_SESSION['username'] = $username;
-       header("Location: " . BASE_URL . "/../index.php?page=admin");
+       header("Location: " . BASE_URL . "/index.php?page=admin");
        //header("Location: /supremeheirinflatables/index.php?page=admin");
        
         exit;
