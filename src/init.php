@@ -17,6 +17,8 @@ require_once BASE_PATH.'/src/models/Database.php';
 require_once BASE_PATH.'/src/models/RsvDB.php';
 require_once BASE_PATH.'/src/models/InvDB.php';
 require_once BASE_PATH.'/src/models/CustDB.php';
+require_once BASE_PATH.'/src/models/UsersDB.php';
+
 
 // ----------------------------
 // CONNECT TO DATABASE

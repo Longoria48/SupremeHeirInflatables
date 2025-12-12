@@ -788,26 +788,26 @@
 })();
 
 /* ===== Admin & Login logic (placeholder, no real auth) ===== */
-// Change: Copied this function from other website version and changed supremeheir in links to root
-(function(){
-  console.log('Login clicked');
-  if (document.body.dataset.page === 'login'){
-    console.log('If statment entered');
-    const form = document.getElementById('loginForm');
-    form?.addEventListener('submit', (e)=>{
-      e.preventDefault();
-      // Per requirement: clicking Log in with no credentials goes to admin.
-      const fd = new FormData(form);
-      const user = (fd.get('username')||'').toString().trim();
-      const pass = (fd.get('password')||'').toString().trim();
-      if (!user && !pass){
-        window.location.href = `${window.APP_CONFIG.BASE_URL || ''}/../index.php?page=admin`;
-        return;
-      }
-      // Optional: if provided, still proceed to admin for now
-      window.location.href = '${window.APP_CONFIG.BASE_URL}/../index.php?page=admin';
-    });
-  }
+// // Change: Copied this function from other website version and changed supremeheir in links to root
+// (function(){
+//   console.log('Login clicked');
+//   if (document.body.dataset.page === 'login'){
+//     console.log('If statment entered');
+//     const form = document.getElementById('loginForm');
+//     form?.addEventListener('submit', (e)=>{
+//       e.preventDefault();
+//       // Per requirement: clicking Log in with no credentials goes to admin.
+//       const fd = new FormData(form);
+//       const user = (fd.get('username')||'').toString().trim();
+//       const pass = (fd.get('password')||'').toString().trim();
+//       if (!user && !pass){
+//         window.location.href = `${window.APP_CONFIG.BASE_URL || ''}/../index.php?page=admin`;
+//         return;
+//       }
+//       // Optional: if provided, still proceed to admin for now
+//       window.location.href = '${window.APP_CONFIG.BASE_URL}/../index.php?page=admin';
+//     });
+//   }
 
   if (document.body.dataset.page === 'admin'){
     // Demo-only: wire placeholder actions

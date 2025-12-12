@@ -70,7 +70,7 @@ class InvDB
         $inventory = $stmt->fetchAll();
         return $inventory ?: [];
     }
-}
+
     /* Delete an inventory item (and related rsv_details) by product_name.
      * Blocks delete if the item is used in any non-canceled reservations.
      * @throws Exception on not found or in-use item
@@ -136,4 +136,5 @@ class InvDB
             throw $e;
         }
     }
+}
 ?>

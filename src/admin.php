@@ -1039,6 +1039,18 @@ require_once BASE_PATH.'/src/includes/adminheader.php';
     <p class="errorMsg"><?= $flash_success ?></p>
   <?php endif; ?>
 
+
+
+<!-- LOGOUT BUTTON -->
+<?php if (!empty($_SESSION['is_admin']) && $_SESSION['is_admin'] === true): ?>
+<form method="GET" action="index.php">
+    <input type="hidden" name="page" value="logout">
+    <button type="submit" class="btn btn-secondary">Log out</button>
+</form>
+<?php endif; ?>
+
+
+
   <main>
     <!-- Add Reservation Form -->
       <h2 class ="adminHeader">Add Reservation</h2>
