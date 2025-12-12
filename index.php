@@ -18,7 +18,7 @@ $routes = [
     // Added log in and admin to index. May change later since these are meant to be private pages.
     'login'     => BASE_PATH . '/src/login.php',
     'admin'     => BASE_PATH . '/src/admin.php',
-    'logout'     => BASE_PATH . '/logout.php'
+    'logout'     => BASE_PATH . '/src/logout.php'
 ];
 
 // If route exists, load it. Otherwise show 404.

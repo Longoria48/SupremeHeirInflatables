@@ -12,8 +12,6 @@
 //header("Location: /supremeheirinflatables/public/login.php");
 //exit;
 
-
-
 <?php
 
 $page = 'logout';
