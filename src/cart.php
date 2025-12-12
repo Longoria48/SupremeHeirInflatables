@@ -20,7 +20,73 @@ CREATION LOG: 11/19/2025 */
 // Set page title and get the header
 $page_title = "Cart";
 $page_slug = "cart";
+
+
+#region Added
+
+session_start();
+
 require_once BASE_PATH.'/src/includes/header.php';
+require_once __DIR__ . '/../src/init.php';
+
+$flash_error = '';
+$flash_success = '';
+
+foreach (['customer_error','inventory_error','search_error','update_error'] as $key) {
+    if (isset($_SESSION[$key])) {
+        $flash_error .= $_SESSION[$key] . "<br>";
+        unset($_SESSION[$key]);
+    }
+}
+
+foreach (['customer_success','inventory_success','search_success','update_success'] as $key) {
+    if (isset($_SESSION[$key])) {
+        $flash_success .= $_SESSION[$key] . "<br>";
+        unset($_SESSION[$key]);
+    }
+}
+try 
+{
+    $database = new Database($config);
+    $pdo = $database->getConnection();
+}
+catch (Exception $e)
+{
+    error_log("Database connection failed: ". $e->getMessage());
+    die("Database connection failed. Please try again later.");
+}
+
+$RsvDB = new RsvDB($pdo);
+$CustDB = new CustDB($pdo);
+$InvDB = new InvDB($pdo);
+
+
+$firstName = $lastName = $phone = $email = $address = $city = $zip = $quantity = $item = "";
+$startDate = $endDate = "";
+
+// Retrieve sticky form values from session if present
+$firstName = $_SESSION['form_firstName'] ?? $firstName;
+$lastName = $_SESSION['form_lastName'] ?? $lastName;
+$phone = $_SESSION['form_phone'] ?? $phone;
+$email = $_SESSION['form_email'] ?? $email;
+$address = $_SESSION['form_address'] ?? $address;
+$city = $_SESSION['form_city'] ?? $city;
+$zip = $_SESSION['form_zip'] ?? $zip;
+$item = $_SESSION['form_item'] ?? $item;
+$startDate = $_SESSION['form_startDate'] ?? $startDate;
+$endDate = $_SESSION['form_endDate'] ?? $endDate;
+$quantity = $_SESSION['form_quantity'] ?? $quantity;
+
+// Clear sticky form values after retrieving them
+unset($_SESSION['form_firstName'], $_SESSION['form_lastName'], $_SESSION['form_phone'], $_SESSION['form_email'], 
+      $_SESSION['form_address'], $_SESSION['form_city'], $_SESSION['form_zip'], $_SESSION['form_item'], 
+      $_SESSION['form_startDate'], $_SESSION['form_endDate'], $_SESSION['form_quantity']);
+
+
+
+#endregion Added
+
+
 
 //---------------------------------------------------------------------------------	
 //								Validate Info on Continue
@@ -126,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['continue']))
         echo "<script>console.log('Error: " . addslashes($error) . "');</script>";
     }
 
-    //---------------------------------------------------------------------------------	
+//---------------------------------------------------------------------------------	
 //									Date Validation
 //---------------------------------------------------------------------------------	
   //Fix our timezone issue.
@@ -180,167 +246,355 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['continue']))
 		}
 	}
 
-  #region Quantity Test
+
+
+#region Added2
+
+
+if (empty($errors))
+    {
+        try
+        {
+          //To avoid half transactions if failed
+          $RsvDB->beginTransaction();
+
+          //Verify customer exists
+          $customer = $CustDB->findCustomer($firstName, $lastName, $phone, $email);
+
+          //If no customer then create one
+          if(!$customer)
+          {
+            $customerId = $CustDB->insertCustomer($firstName, $lastName, $phone, $email);
+          }
+          else
+          {
+            $customerId = (int)$customer['customer_id'];
+          }
+
+          //Look up the inventory item by product_name
+          //Lock inventory row for this item so stock & availability
+          // cannot change under us while we compute availability
+          // $inventory = $InvDB->inventoryLock($item);
+
+          // //If no item found throw exception
+          // if(!$inventory)
+          // {
+          //   throw new Exception("Selected item not found in inventory.");
+          // }
+
+          // $inventoryId = (int)$inventory['inventory_id'];
+          // $stock = (int)$inventory['stock'];
+
+          // // will need to check if quantity is greater than the database stock 
+          // if($quantity > $stock)
+          // {
+          //   throw new Exception("$item only has ($stock) in stock.");
+          // }
+
+          // //Check how many units are already reserved for overlapping dates
+          // $reservedQty = $InvDB->inventoryOverlap($inventoryId, $startDate, $endDate);
+
+          // //Check availability against reserved qty
+          // $available = $stock - $reservedQty;
+
+          // //If out of stock throw exception
+          // if($available < $quantity)
+          // {
+          //   throw new Exception($inventory['product_name']." only has ($available) available for the selected dates.");
+          // }
+          
+          //Insert reservation
+          $reservationId = $RsvDB->createRSV($customerId,$startDate,$endDate,$address,$city,$zip);
+          $successItems = []; //array to hold each item and quantity
 
 
 
+#region Added 3
 
 
+// Loop through all cart items and add them to rsv_details
+foreach ($cartItems as $ci) {
+    $itemName  = $ci['name'];
+    $qty       = (int)$ci['quantity'];
 
-    if (empty($errors)) {
-        try {
-            $conn->beginTransaction();
-
-            // ---------------------------
-            // 1. CUSTOMER LOOKUP / CREATE
-            // ---------------------------
-            $stmt = $conn->prepare("SELECT customer_id FROM customers WHERE phone = ?");
-            $stmt->execute([$phone]);
-            $customer = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$customer) {
-                $insertCustomer = $conn->prepare(
-                    "INSERT INTO customers(first_name, last_name, phone, email) VALUES(?,?,?,?)"
-                );
-                $insertCustomer->execute([$firstName, $lastName, $phone, $email]);
-                $customerId = (int)$conn->lastInsertId();
-            } else {
-                $customerId = (int)$customer['customer_id'];
-            }
-
-            // ----------------------------
-            // 2. CREATE MAIN RESERVATION
-            // ----------------------------
-            $insertRsv = $conn->prepare("
-                INSERT INTO reservations (customer_id, start_date, end_date, order_status, address, city, zip)
-                VALUES (:customer_id, :start_date, :end_date, :status, :address, :city, :zip)
-            ");
-
-            $insertRsv->execute([
-                ':customer_id' => $customerId,
-                ':start_date'  => $startDate,
-                ':end_date'    => $endDate,
-                ':status'      => 'Pending',
-                ':address'     => $address,
-                ':city'        => $city,
-                ':zip'         => $zip
-            ]);
-
-            $reservationId = (int)$conn->lastInsertId();
-
-            // --------------------------------------
-            // 3. VALIDATE + INSERT EACH CART ITEM
-            // --------------------------------------
-            foreach ($cartItems as $ci) {
-
-                $itemName  = $ci['name'];
-                $quantity  = (int)$ci['quantity'];
-
-                // get inventory row
-                $inventoryStmt = $conn->prepare("
-                    SELECT inventory_id, stock, product_name
-                    FROM inventory
-                    WHERE product_name = ?
-                    LIMIT 1
-                    FOR UPDATE
-                ");
-                $inventoryStmt->execute([$itemName]);
-                $inventory = $inventoryStmt->fetch(PDO::FETCH_ASSOC);
-
-                if (!$inventory) {
-                    throw new Exception("Item '$itemName' not found in inventory.");
-                }
-
-                $inventoryId = (int)$inventory['inventory_id'];
-                $stock       = (int)$inventory['stock'];
-
-                // calculate reserved amount for date range
-                $overLapStmt = $conn->prepare("
-                    SELECT COALESCE(SUM(d.quantity), 0) AS reserved_qty
-                    FROM rsv_details d
-                    JOIN reservations r ON r.reservation_id = d.reservation_id
-                    WHERE d.inventory_id = :inv_id
-                    AND NOT (r.end_date < :start_date OR r.start_date > :end_date)
-                    AND r.order_status <> 'Canceled'
-                    FOR UPDATE
-                ");
-
-                $overLapStmt->execute([
-                    ':inv_id'     => $inventoryId,
-                    ':start_date' => $startDate,
-                    ':end_date'   => $endDate
-                ]);
-
-                $reservedQty = (int)$overLapStmt->fetchColumn();
-
-                // availability check
-                $available = $stock - $reservedQty;
-
-                if ($available < $quantity) {
-                    $errors[] = "{$inventory['product_name']} has only ($available) available for the selected dates.";
-                    throw new Exception("{$inventory['product_name']} has only ($available) available for the selected dates.");
-                }
-
-                // insert into rsv_details
-                $insertRsvDetail = $conn->prepare("
-                    INSERT INTO rsv_details (reservation_id, inventory_id, quantity)
-                    VALUES (?, ?, ?)
-                ");
-
-                $insertRsvDetail->execute([$reservationId, $inventoryId, $quantity]);
-            }
-
-            // ---------------------------
-            // SUCCESS
-            // ---------------------------
-            $conn->commit();
-
-            $_SESSION['customer_success'] = "Reservation #$reservationId created successfully!";
-
-            //header("Location: " . $_SERVER['PHP_SELF']);
-            //exit;
-
-        } catch (Exception $e) {
-            if ($conn->inTransaction()) {
-                $conn->rollBack();
-            }
-            $_SESSION['customer_error'] = $e->getMessage();
-        }
+    // Lock inventory row for this item
+    $inventory = $InvDB->inventoryLock($itemName);
+    if (!$inventory) {
+        throw new Exception("Item '$itemName' not found in inventory.");
     }
-    if (!empty($errors)) {
-        $_SESSION['customer_error'] = implode("<br>", $errors);
 
-        // Store sticky form values
-        $_SESSION['form_firstName'] = $firstName;
-        $_SESSION['form_lastName']  = $lastName;
-        $_SESSION['form_phone']     = $phone;
-        $_SESSION['form_email']     = $email;
-        $_SESSION['form_address']   = $address;
-        $_SESSION['form_city']      = $city;
-        $_SESSION['form_zip']       = $zip;
+    $inventoryId = (int)$inventory['inventory_id'];
+    $stock       = (int)$inventory['stock'];
 
-        header("Location: index.php?page=cart");
-        exit;
+    // Check availability
+    $reservedQty = $InvDB->inventoryOverlap($inventoryId, $startDate, $endDate);
+    $available   = $stock - $reservedQty;
+
+    if ($available < $qty) {
+        throw new Exception("{$inventory['product_name']} only has ($available) available for the selected dates.");
     }
+
+    // Insert into rsv_details
+    $RsvDB->updateRsvDetails($reservationId, $inventoryId, $qty);
+
+
+        // Add to success message array
+    $successItems[] = esc($inventory['product_name']) . " x $qty";
 }
 
+// Commit transaction after all items processed
+$RsvDB->commit();
+
+#endregion Added 3
+
+
+
+
+
+
+
+
+
+         // $RsvDB->updateRsvDetails($reservationId, $inventoryId, (int)$quantity);
+        //  $RsvDB->commit();
+
+          
+           // Build final success message
+          $success = "Reservation created! #$reservationId • " . implode(" • ", $successItems) .
+           " • Dates: " . esc($startDate) . " to " . esc($endDate);
+
+
+          $_SESSION['customer_success'] = $success;
+          $_SESSION['clear_cart'] = true;
+
+          // Reset form fields
+          $firstName = $lastName = $phone = $email = $address = $city = $zip = "";
+          $startDate = $endDate = $item = $quantity = "";
+
+          // Clear the cart after successful reservation
+          unset($_SESSION['cart']);
+
+          header("Location: " . BASE_URL . "/index.php?page=cart");
+          exit;
+
+        }
+        catch(PDOException $e)
+        {
+            if($RsvDB->inTransaction())
+            {
+                $RsvDB->rollBack();
+            }
+            error_log("Database error in create reservation: " . esc($e->getMessage()));
+            $_SESSION['customer_error'] = "Error creating reservation. Please try again later.";
+            header("Location: " . BASE_URL . "/index.php?page=cart");
+            exit;
+        }
+        catch(Exception $e)
+        {
+            if ($RsvDB->inTransaction()) {
+                $RsvDB->rollBack();
+            }
+
+            error_log("General error in create reservation: " . $e->getMessage());
+            $_SESSION['customer_error'] = "Error creating reservation. Please try again later.";
+            header("Location: " . BASE_URL . "/index.php?page=cart");
+            exit;
+        }
+  }
+    else
+    {
+        $_SESSION['customer_error'] = implode("<br>", $errors); //implode joins array elements into a string. Used for display
+        // Store form values in session to make form sticky
+        $_SESSION['form_firstName'] = $firstName;
+        $_SESSION['form_lastName'] = $lastName;
+        $_SESSION['form_phone'] = $phone;
+        $_SESSION['form_email'] = $email;
+        $_SESSION['form_address'] = $address;
+        $_SESSION['form_city'] = $city;
+        $_SESSION['form_zip'] = $zip;
+        $_SESSION['form_item'] = $item;
+        $_SESSION['form_startDate'] = $startDate;
+        $_SESSION['form_endDate'] = $endDate;
+        $_SESSION['form_quantity'] = $quantity;
+        header("Location: " . BASE_URL . "/index.php?page=cart");
+        exit;
+    }
+
+
+  }
+
+#endregion Added2
+
+
+
+
+  #region Quantity Test
+// $conn = new CustDB($pdo);
+//     if (empty($errors)) {
+//         try {
+//             $conn->beginTransaction();
+
+//             // ---------------------------
+//             // 1. CUSTOMER LOOKUP / CREATE
+//             // ---------------------------
+//             $stmt = $conn->prepare("SELECT customer_id FROM customers WHERE phone = ?");
+//             $stmt->execute([$phone]);
+//             $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+
+//             if (!$customer) {
+//                 $insertCustomer = $conn->prepare(
+//                     "INSERT INTO customers(first_name, last_name, phone, email) VALUES(?,?,?,?)"
+//                 );
+//                 $insertCustomer->execute([$firstName, $lastName, $phone, $email]);
+//                 $customerId = (int)$conn->lastInsertId();
+//             } else {
+//                 $customerId = (int)$customer['customer_id'];
+//             }
+
+//             // ----------------------------
+//             // 2. CREATE MAIN RESERVATION
+//             // ----------------------------
+//             $insertRsv = $conn->prepare("
+//                 INSERT INTO reservations (customer_id, start_date, end_date, order_status, address, city, zip)
+//                 VALUES (:customer_id, :start_date, :end_date, :status, :address, :city, :zip)
+//             ");
+
+//             $insertRsv->execute([
+//                 ':customer_id' => $customerId,
+//                 ':start_date'  => $startDate,
+//                 ':end_date'    => $endDate,
+//                 ':status'      => 'Pending',
+//                 ':address'     => $address,
+//                 ':city'        => $city,
+//                 ':zip'         => $zip
+//             ]);
+
+//             $reservationId = (int)$conn->lastInsertId();
+
+//             // --------------------------------------
+//             // 3. VALIDATE + INSERT EACH CART ITEM
+//             // --------------------------------------
+//             foreach ($cartItems as $ci) {
+
+//                 $itemName  = $ci['name'];
+//                 $quantity  = (int)$ci['quantity'];
+
+//                 // get inventory row
+//                 $inventoryStmt = $conn->prepare("
+//                     SELECT inventory_id, stock, product_name
+//                     FROM inventory
+//                     WHERE product_name = ?
+//                     LIMIT 1
+//                     FOR UPDATE
+//                 ");
+//                 $inventoryStmt->execute([$itemName]);
+//                 $inventory = $inventoryStmt->fetch(PDO::FETCH_ASSOC);
+
+//                 if (!$inventory) {
+//                     throw new Exception("Item '$itemName' not found in inventory.");
+//                 }
+
+//                 $inventoryId = (int)$inventory['inventory_id'];
+//                 $stock       = (int)$inventory['stock'];
+
+//                 // calculate reserved amount for date range
+//                 $overLapStmt = $conn->prepare("
+//                     SELECT COALESCE(SUM(d.quantity), 0) AS reserved_qty
+//                     FROM rsv_details d
+//                     JOIN reservations r ON r.reservation_id = d.reservation_id
+//                     WHERE d.inventory_id = :inv_id
+//                     AND NOT (r.end_date < :start_date OR r.start_date > :end_date)
+//                     AND r.order_status <> 'Canceled'
+//                     FOR UPDATE
+//                 ");
+
+//                 $overLapStmt->execute([
+//                     ':inv_id'     => $inventoryId,
+//                     ':start_date' => $startDate,
+//                     ':end_date'   => $endDate
+//                 ]);
+
+//                 $reservedQty = (int)$overLapStmt->fetchColumn();
+
+//                 // availability check
+//                 $available = $stock - $reservedQty;
+
+//                 if ($available < $quantity) {
+//                     $errors[] = "{$inventory['product_name']} has only ($available) available for the selected dates.";
+//                     throw new Exception("{$inventory['product_name']} has only ($available) available for the selected dates.");
+//                 }
+
+//                 // insert into rsv_details
+//                 $insertRsvDetail = $conn->prepare("
+//                     INSERT INTO rsv_details (reservation_id, inventory_id, quantity)
+//                     VALUES (?, ?, ?)
+//                 ");
+
+//                 $insertRsvDetail->execute([$reservationId, $inventoryId, $quantity]);
+//             }
+
+//             // ---------------------------
+//             // SUCCESS
+//             // ---------------------------
+//             $conn->commit();
+
+//             $_SESSION['customer_success'] = "Reservation #$reservationId created successfully!";
+
+//             header("Location: " . $_SERVER['PHP_SELF']);
+//             exit;
+
+//         } catch (Exception $e) {
+//             if ($conn->inTransaction()) {
+//                 $conn->rollBack();
+//             }
+//             $_SESSION['customer_error'] = $e->getMessage();
+//         }
+//     }
+//     if (!empty($errors)) {
+//         $_SESSION['customer_error'] = implode("<br>", $errors);
+
+//         // Store sticky form values
+//         $_SESSION['form_firstName'] = $firstName;
+//         $_SESSION['form_lastName']  = $lastName;
+//         $_SESSION['form_phone']     = $phone;
+//         $_SESSION['form_email']     = $email;
+//         $_SESSION['form_address']   = $address;
+//         $_SESSION['form_city']      = $city;
+//         $_SESSION['form_zip']       = $zip;
+
+//         header("Location: index.php?page=cart");
+//         exit;
+//     }
+// }
+
 #endregion
+
 ?>
-<?php if (!empty($_SESSION['customer_error'])): ?>
-    <div class="flash-error" style="color:white; padding:15px;">
-        <?= $_SESSION['customer_error']; ?>
-    </div>
-    <?php unset($_SESSION['customer_error']); ?>
-<?php endif; ?>
 
-<?php if (!empty($_SESSION['customer_success'])): ?>
-    <div class="flash-success" style="color:green;">
-        <?= $_SESSION['customer_success']; ?>
-    </div>
-    <?php unset($_SESSION['customer_success']); ?>
-<?php endif; ?>
+  <?php if ($flash_error): ?>
+    <p class="errorMsg" style="color:white; padding:20px;"><?= $flash_error ?></p>
+  <?php endif; ?>
 
-<?php unset($_SESSION['customer_error'], $_SESSION['customer_success']); ?>
+  <?php if ($flash_success): ?>
+    <p class="errorMsg" style="color:white; padding:20px;"><?= $flash_success ?></p>
+  <?php endif; ?>
+
+
+
+<?php if (!empty($_SESSION['clear_cart'])): ?>
+<script>
+    console.log("Clearing LocalStorage cart...");
+    setCart({ items: [], personal: {} });
+    render();
+</script>
+<?php 
+    unset($_SESSION['clear_cart']); 
+endif; 
+?>
+
+
+
+
 
 <main class="container cart-layout">
     <section class="cart-list" id="cartList" aria-label="Cart items">

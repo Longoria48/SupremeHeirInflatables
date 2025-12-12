@@ -14,6 +14,10 @@ function beginTransaction(): void
 {
     $this->conn->beginTransaction();
 }
+public function inTransaction(): bool
+{
+    return $this->conn->inTransaction();
+}
 
 function commit(): void
 {
@@ -40,7 +44,15 @@ function rollBack(): void
                 ':city'       => $city,
                 ':zip'        => $zip
             ]);
-            return (int)$this->conn->lastInsertId();
+            try{
+                return (int)$this->conn->lastInsertId();
+            }
+            catch (PDOException $e)
+            {
+                error_log("createRSV failed: ".$e->getMessage());
+                 echo "<script>console.error(" . json_encode("Reservation error: " . $e->getMessage()) . ");</script>";
+                throw $e;
+            }
     }
 
     public function updateRsvDetails(int $reservationId,int $inventoryId,int $quantity): void

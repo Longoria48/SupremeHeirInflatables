@@ -48,5 +48,10 @@ class CustDB
     }
 
     //Do we want to add a delete customer?
+    public function beginTransaction(): void
+    {
+        $this->conn->beginTransaction();
+    }
+
 }
 ?>

@@ -661,7 +661,7 @@
           <!-- Dates moved to cart top so they can update totals live -->
         </div>
         <div class="actions">
-          <button class="btn btn-primary" type="submit" name="continue" value="1">Continue</button>
+          <button class="btn btn-primary" type="submit" name="continue" value="1">Create Reservation</button>
         </div>
       </form>
     `);
